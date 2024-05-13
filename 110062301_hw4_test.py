@@ -47,8 +47,8 @@ class ActorNetwork(nn.Module):
         
         
     def forward(self, x):
-        if(x.dim() == 1):
-            x = x.reshape(1,-1)
+        # if(x.dim() == 1):
+        x = x.reshape(1,-1)
         
         
         v_tgt = x[:, :242]
