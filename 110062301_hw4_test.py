@@ -6,6 +6,55 @@ import torch.nn.functional as F
 
 
 
+# Extract relevant features
+pelvis_features = ['height', 'pitch', 'roll'] 
+leg_features = [  'HAB', 'HAD', 'HFL', 'GLU', 'HAM', 'RF', 'VAS', 'BFSH', 'GAS', 'SOL', 'TA'] 
+joint_features = ['hip_abd', 'hip', 'knee', 'ankle'] 
+j = ['joint', 'd_joint']
+f = ['f','l','v']
+
+def to_tensor(data_dict):
+    
+    
+    # Get array data
+    v_tgt_field_features = data_dict['v_tgt_field']
+    
+
+    # Step 2: Organize features into lists
+    pelvis_data = [data_dict['pelvis'][feature] for feature in pelvis_features]
+    pelvis_data += data_dict['pelvis']['vel']
+    
+    
+    l_leg_data = [data_dict['l_leg'][feature][detail] for feature in leg_features for detail in f]
+    l_leg_data += [data_dict['l_leg'][feature][detail] for feature in j for detail in joint_features]
+    l_leg_data += data_dict['l_leg']['ground_reaction_forces']
+    
+    
+    r_leg_data = [data_dict['r_leg'][feature][detail] for feature in leg_features for detail in f]
+    r_leg_data += [data_dict['r_leg'][feature][detail] for feature in j for detail in joint_features]
+    r_leg_data += data_dict['r_leg']['ground_reaction_forces']
+    
+    
+    
+    
+    # Step 3: Convert organized data into torch tensors
+    
+    v_tgt_field_tensor = torch.from_numpy(v_tgt_field_features).reshape(-1)
+    
+    pelvis_tensor = torch.Tensor(pelvis_data)
+    
+    r_leg_tensor = torch.Tensor(r_leg_data)
+    l_leg_tensor = torch.Tensor(l_leg_data)
+
+    # Concatenate tensors along appropriate dimension
+    all_data_tensor = torch.cat((v_tgt_field_tensor, pelvis_tensor, r_leg_tensor, l_leg_tensor), dim=0)
+   
+    
+    all_data_tensor = all_data_tensor.to(torch.float32)
+    return all_data_tensor
+
+
+
 class Layer_norm(nn.Module):
     def __init__(self, in_features, out_features):
         # Layer, Norm, Afn, Drop, Residual
@@ -47,8 +96,8 @@ class ActorNetwork(nn.Module):
         
         
     def forward(self, x):
-        # if(x.dim() == 1):
-        x = x.reshape(1,-1)
+        if(x.dim() == 1):
+            x = x.reshape(1,-1) 
         
         
         v_tgt = x[:, :242]
@@ -111,6 +160,7 @@ class Agent(object):
         with torch.no_grad():
             if self.step % 4 == 0:
                 self.actor.eval()
+                observation = to_tensor(observation)
                 action = self.actor(observation)
                 
             
