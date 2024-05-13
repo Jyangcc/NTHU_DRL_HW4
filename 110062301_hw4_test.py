@@ -25,6 +25,7 @@ scale = torch.zeros(22) + 0.5
 bias  = torch.zeros(22) + 0.5
 
 
+
 class ActorNetwork(nn.Module):
     def __init__(self, action_dim = 22, min_log_sigma = -20, max_log_sigma = 2):
         super(ActorNetwork, self).__init__()
